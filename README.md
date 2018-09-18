@@ -3,8 +3,10 @@ This is still very much an early proof of concept project, it aims to dump gameb
 It is intended for a gameboy color as you can hotswap cartridges on it, making this actually usable.    
 
 The sender right now was written for the one exploitable game I own, the german version of pokemon yellow.  
-It is so early in development that as of right now its just a binary file I created in a hex editor for the RAM position of 0xDA84, executed with glitch item ws l' m.  
-All it does is wait for you to press start and then starts sending 1MB of the current cartridge inserted via audio at about 1.7KB/s, no options or interface as of now.  
+To compile it, you need rgbasm 0.3.3 and rgbbin from here:
+https://github.com/zzazzdzz/rgbbin
+The resulting bin then goes into the game RAM at 0xDA84, executed with glitch item ws l' m.  
+All it does is wait for you to press start and then starts sending the current cartridge inserted via audio at about 1.7KB/s, no options or interface as of now.  
 With that speed, it takes about 10 minutes to go through that whole 1MB which I think is not too bad at all, I dont think it could go much faster with my current design.  
 To get it into that position, I created a set of inputs in an emulator that go from the beginning of the game up to a point where it can install that sender.  
 Right now that installer is too dirty for me to feel comfortable sharing it.    
