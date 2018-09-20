@@ -7,17 +7,30 @@ SECTION "WRAM",ROM0[$DA84]
 
 init:
 	di
+	; reset audio regs
 	ld a, 0
 	ldh [$FF26], a
 	ld a, $80
 	ldh [$FF26], a
+	; set wav to low
+	ld h, $FF
+	ld l, $30
+	ld a, 0
+clearsamples:
+	ld [hl+], a
+	bit 6,l
+	jr z, clearsamples
+	; wav 100% volume
+	ld a, $20
+	ldh [$FF1C], a
+	; freq of 7F0
 	ld a, $F0
-	ldh [$FF13], a
-	ldh [$FF12], a
-	ld a, $80
-	ldh [$FF11], a
+	ldh [$FF1D], a
+	;enable wav dac and trigger
 	ld a, $87
-	ldh [$FF14], a
+	ldh [$FF1A], a
+	ldh [$FF1E], a
+	; wait for start press
 	ld a, $10
 	ldh [$FF00], a
 waitpress:
@@ -54,6 +67,7 @@ getbanktotal:
 	ld hl, 0
 	ld c, 0
 testsend:
+	;send calibration values
 	ld a, $F
 	call sendnibble
 	ld a, $A
@@ -113,31 +127,32 @@ end:
 	jr end
 
 sendnibble:
-	;enable square with
-	;volume of lut
+	;enable wave with
+	;master volume of lut
 	and $F
 	ld de, vollut
 	add a,e
 	ld e,a
-	ld a, $87
-	ldh [$FF14], a
-	ld a, $11
-	ldh [$FF25], a
+	;set master volume
 	ld a, [de]
 	ldh [$FF24], a
-	call delayloop
-	;disable square
-	ld a, 0
-	ldh [$FF24], a
+	;allow wav volume
+	ld a, $44
 	ldh [$FF25], a
+	;delay for audio recording
+	ld a, $10
+	call delayloop
+	;disallow wav volume
+	ld a, 0
+	ldh [$FF25], a
+	;delay for audio recording
+	ld a, $1C
 	call delayloop
 	ret
 
 delayloop:
-	ld a, $1E
-delaydec:
 	dec a
-	jr nz, delaydec
+	jr nz, delayloop
 	ret
 
 vollut:
