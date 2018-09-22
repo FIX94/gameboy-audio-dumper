@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <string.h>
 #include <malloc.h>
+#include "crc32.h"
+#include "polarssl/md5.h"
+#include "polarssl/sha1.h"
 
 //0x1800 is harcoded minimum spike in volume to count as peak
 #define PEAK_MIN 0x1800
@@ -52,95 +56,156 @@ static void curpeak(int32_t *pl, int32_t *pr, int16_t *smpl)//, int32_t i)
 		*pr = peakr-savgr;
 	}
 }
+
+static unsigned int crc32tmp = 0;
+static md5_context md5ctx;
+static sha1_context sha1ctx;
+
+static void emptywbuf(FILE *f, uint8_t *buf, size_t size)
+{
+	if(size)
+	{
+        crc32tmp = crc32buffer(buf, size, crc32tmp);
+        md5_update(&md5ctx, buf, size);
+        sha1_update(&sha1ctx, buf, size);
+		fwrite(buf, 1, size, f);
+	}
+}
+
+static void updatedev(int32_t peak, int32_t *dev, size_t pos, size_t *devpos)
+{
+	if(peak < *dev)
+	{
+		*dev = peak;
+		*devpos = pos;
+	}
+}
+
 int main(int argc, char *argv[])
 {
+	//file we read from/write to
+	FILE *fr = NULL, *fw = NULL;
+	size_t frsize = 0, fwsize = 0;
+	//wav file header
+	uint8_t hdr[0x2C];
+	//read/write buffers
+	uint8_t *rbuf = NULL;
+	size_t rremain = 0;
+	uint8_t *wbuf = NULL;
+	size_t datsize = 0;
+	int16_t *smpl = NULL;
+	size_t smplsize = 0;
+	size_t smpltotal = 0, prevsmpltotal = 0, smplpos = 0;
+	size_t i = 0;
+	//amount of volume states measured
+	uint8_t statesdone = 0;
+	//measured volume states and deviations of them
+	int32_t statesltop[4] = {0,0,0,0}, statesrtop[4] = {0,0,0,0};
+	int32_t stateslbottom[4] = {0,0,0,0}, statesrbottom[4] = {0,0,0,0};
+	int32_t devl[4] = {0,0,0,0}, devr[4] = {0,0,0,0};
+	size_t devlpos[4] = {0,0,0,0}, devrpos[4] = {0,0,0,0};
+	//currently processed peaks
+	int32_t peakl = 0, peakr = 0;
+	int32_t peakltmp = 0, peakrtmp = 0;
+	//currently processed byte
+	uint8_t bstate = 0;
+	uint8_t byte = 0;
+	//bytes written total
+	size_t wpos = 0;
+	//hashing
+	uint32_t crc32 = 0;
+	uint8_t md5[16];
+	uint8_t sha1[20];
+	//finally go
 	printf("GameBoy Audio Dumper POC by FIX94\n");
 	if(argc < 2 || strlen(argv[1]) < 5 || memcmp(argv[1]+strlen(argv[1])-4,".wav",4) != 0)
 	{
 		printf("Please provide a .wav file to process!\n");
-		return 0;
+		goto end_prog;
 	}
-	FILE *f = fopen(argv[1],"rb");
-	if(!f)
+	fr = fopen(argv[1],"rb");
+	if(!fr)
 	{
 		printf("ERROR: Unable to open %s!\n", argv[1]);
-		return 0;
+		goto end_prog;
 	}
-	fseek(f,0,SEEK_END);
-	size_t fsize = ftell(f);
-	if(fsize < 0x30)
+	fseek(fr,0,SEEK_END);
+	frsize = ftell(fr);
+	if(frsize < 0x30)
 	{
 		printf("Not enough data in .wav to process!\n");
-		fclose(f);
-		return 0;
+		goto end_prog;
 	}
-	rewind(f);
-	uint8_t hdr[0x2C];
-	fread(hdr,1,0x2C,f);
+	rewind(fr);
+	fread(hdr,1,0x2C,fr);
 	if(memcmp("RIFF",hdr,4) != 0 || memcmp("WAVE",hdr+8,4) != 0 || memcmp("fmt",hdr+12,3) != 0 || *(uint32_t*)(hdr+16) != 0x10
 		|| memcmp("data",hdr+36,4) != 0)
 	{
 		printf("Invalid .wav header!\n");
-		fclose(f);
-		return 0;
+		goto end_prog;
 	}
 	if(*(uint16_t*)(hdr+20) != 1 || *(uint16_t*)(hdr+22) != 2 || *(uint32_t*)(hdr+24) != 44100 || *(uint32_t*)(hdr+28) != 176400
 		|| *(uint16_t*)(hdr+32) != 4 || *(uint16_t*)(hdr+34) != 16)
 	{
 		printf(".wav has to be 16bit Stereo 44100Hz PCM!\n");
-		fclose(f);
-		return 0;
+		goto end_prog;
 	}
-	size_t datsize = *(uint32_t*)(hdr+40);
-	if(datsize > (fsize-0x2C))
+	datsize = *(uint32_t*)(hdr+40);
+	if(datsize > (frsize-0x2C))
 	{
 		printf("Data size bigger than .wav!\n");
-		fclose(f);
-		return 0;
+		goto end_prog;
 	}
-	uint8_t *buf = malloc(datsize);
-	fread(buf,1,datsize,f);
-	fclose(f);
 	memcpy(argv[1]+strlen(argv[1])-4,".gbc",4);
-	f = fopen(argv[1],"wb");
-	if(!f)
+	fw = fopen(argv[1],"wb");
+	if(!fw)
 	{
 		printf("ERROR: unable to write %s!\n", argv[1]);
-		free(buf);
-		return 0;
+		goto end_prog;
 	}
-	size_t i = 0,j = 0;
-	int16_t *smpl = (int16_t*)buf;
-	size_t smplsize = datsize/2;
-	printf("Processing %i samples\n", smplsize);
-	int32_t statesltop[4] = {0,0,0,0};
-	int32_t statesrtop[4] = {0,0,0,0};
-	int32_t stateslbottom[4] = {0,0,0,0};
-	int32_t statesrbottom[4] = {0,0,0,0};
-	int32_t devl[4] = {0,0,0,0};
-	int32_t devr[4] = {0,0,0,0};
-	size_t devlpos[4] = {0,0,0,0};
-	size_t devrpos[4] = {0,0,0,0};
-	uint8_t statesdone = 0;
-	uint8_t bstate = 0;
-	uint8_t byte = 0;
-	size_t previ = 0;
-	size_t wpos = 0;
-	//go through read in samples
-	while(i+38 < smplsize)
+	fwsize = 0;
+	rbuf = malloc(16*1024*1024);
+	wbuf = malloc(1024*1024);
+	if(!rbuf || !wbuf)
 	{
-		int32_t peakl, peakr;
+		printf("ERROR: Unable to allocate read/write buffers!\n");
+		goto end_prog;
+	}
+	rremain = 0;
+	smpl = (int16_t*)rbuf;
+	smplsize = datsize/2;
+	printf("Processing %i samples\n", smplsize);
+	//initialize hash variables
+	crc32tmp = 0xFFFFFFFF;
+	md5_starts(&md5ctx);
+	sha1_starts(&sha1ctx);
+	//go through read in samples
+	while(smpltotal+30 < smplsize)
+	{
+		//refill read buffer if needed
+		if(rremain < 60)
+		{
+			fseek(fr,(smpltotal<<1)+0x2C,SEEK_SET);
+			rremain = fread(rbuf,1,16*1024*1024,fr);
+			//not enough remaining of the file for another peak
+			if(rremain < 60)
+			{
+				printf("Ending sample reading early at sample %i\n", i>>1);
+				break;
+			}
+			printf("%i%%\n", (size_t)((((float)smpltotal)*100.f)/((float)smplsize)));
+			smplpos = 0;
+		}
 		//try see if theres a peak in between
-		curpeak(&peakl, &peakr, smpl+i);//, i>>1);
+		curpeak(&peakl, &peakr, smpl+smplpos);//, i>>1);
 		//if there was one, check samples around it
 		//to find the middle of it for accurate capture
 		//size_t addl = 0, addr = 0;
 		if(peakl && peakr)
 		{
-			int32_t peakltmp, peakrtmp;
-			for(j = 2; j < 6; j+=2)
+			for(i = 2; i < 6; i+=2)
 			{
-				curpeak(&peakltmp, &peakrtmp, smpl+i+j);//, (i+j)>>1);
+				curpeak(&peakltmp, &peakrtmp, smpl+smplpos+i);//, (i+j)>>1);
 				//if(i>>1 == 36154) printf("%i %i\n", peakltmp, peakrtmp);
 				if(peakltmp > peakl)
 				{
@@ -186,86 +251,113 @@ int main(int argc, char *argv[])
 				if(peakl > stateslbottom[0])
 				{
 					byte |= 0xC0;
-					if(peakl < devl[0])
-					{
-						devl[0] = peakl;
-						devlpos[0] = wpos;
-					}
+					updatedev(peakl, devl+0, wpos, devlpos+0);
 				}
 				else if(peakl > stateslbottom[1])
 				{
 					byte |= 0x80;
-					if(peakl < devl[1])
-					{
-						devl[1] = peakl;
-						devlpos[1] = wpos;
-					}
+					updatedev(peakl, devl+1, wpos, devlpos+1);
 				}
 				else if(peakl > stateslbottom[2])
 				{
 					byte |= 0x40;
-					if(peakl < devl[2])
-					{
-						devl[2] = peakl;
-						devlpos[2] = wpos;
-					}
+					updatedev(peakl, devl+2, wpos, devlpos+2);
 				}
 				if(peakr > statesrbottom[0])
 				{
 					byte |= 0x30;
-					if(peakr < devr[0])
-					{
-						devr[0] = peakr;
-						devrpos[0] = wpos;
-					}
+					updatedev(peakr, devr+0, wpos, devrpos+0);
 				}
 				else if(peakr > statesrbottom[1])
 				{
 					byte |= 0x20;
-					if(peakr < devr[1])
-					{
-						devr[1] = peakr;
-						devrpos[1] = wpos;
-					}
+					updatedev(peakr, devr+1, wpos, devrpos+1);
 				}
 				else if(peakr > statesrbottom[2])
 				{
 					byte |= 0x10;
-					if(peakr < devr[2])
-					{
-						devr[2] = peakr;
-						devrpos[2] = wpos;
-					}
+					updatedev(peakr, devr+2, wpos, devrpos+2);
 				}
 				//got 2 nibbles, write byte
 				if(bstate == 1)
 				{
-					fwrite(&byte,1,1,f);
+					wbuf[fwsize++] = byte;
 					byte = 0;
+					//empty buf to file
+					if(fwsize == 1024*1024)
+					{
+						emptywbuf(fw, wbuf, fwsize);
+						fwsize = 0;
+					}
 					wpos++;
 				}
 				bstate^=1;
 			}
-			if(i-previ > 24)
-				printf("WARNING: Possible desync at byte %i sample %i with a value of %i\n", wpos, i>>1, i-previ);
-			previ = i;
-			//add 10 samples before next check
-			i+=18;
+			if(statesdone > 1 && smpltotal-prevsmpltotal > 24)
+				printf("WARNING: Possible desync at byte %i sample %i with a value of %i\n", wpos, smpltotal>>1, smpltotal-prevsmpltotal);
+			prevsmpltotal = smpltotal;
+			//add 9 samples before next check
+			smpltotal+=18;
+			smplpos+=18;
+			rremain-=36;
 		}
 		else //no peak, add sample
-			i+=2;
+		{
+			smpltotal+=2;
+			smplpos+=2;
+			rremain-=4;
+		}
 	}
-	printf("Done! Wrote %i bytes\n", wpos);
-	printf("Statistics:\n");
-	printf("Biggest Deviations from States Top to Bottom 0, 1 and 2 Left:\n");
-	printf("Byte %i with %i%%, Byte %i with %i%%, Byte %i with %i%%\n", devlpos[0], 100-((devl[0]-stateslbottom[0])*100/(statesltop[0]-stateslbottom[0])), 
-																		devlpos[1], 100-((devl[1]-stateslbottom[1])*100/(statesltop[1]-stateslbottom[1])),
-																		devlpos[2], 100-((devl[2]-stateslbottom[2])*100/(statesltop[2]-stateslbottom[2])));
-	printf("Biggest Deviations from States Top to Bottom 0, 1 and 2 Right:\n");
-	printf("Byte %i with %i%%, Byte %i with %i%%, Byte %i with %i%%\n", devrpos[0], 100-((devr[0]-statesrbottom[0])*100/(statesrtop[0]-statesrbottom[0])),
-																		devrpos[1], 100-((devr[1]-statesrbottom[1])*100/(statesrtop[1]-statesrbottom[1])),
-																		devrpos[2], 100-((devr[2]-statesrbottom[2])*100/(statesrtop[2]-statesrbottom[2])));
-	fclose(f);
-	free(buf);
+	//remainder remainder if any
+	if(fwsize)
+	{
+		emptywbuf(fw, wbuf, fwsize);
+		fwsize = 0;
+	}
+	if(wpos == 0)
+	{
+		printf("Unable to find any data in the provided .wav file!\n");
+		printf("Make sure the file was properly recorded and normalized before\n");
+		printf("Throwing it into this application!\n");
+	}
+	else
+	{
+		//print stats
+		printf("Done! Wrote %i bytes\n", wpos);
+		printf(" \nStatistics:\n");
+		printf("Biggest Deviations from States Top to Bottom 0, 1 and 2 Left:\n");
+		printf("Byte %i with %i%%, Byte %i with %i%%, Byte %i with %i%%\n", devlpos[0], 100-((devl[0]-stateslbottom[0])*100/(statesltop[0]-stateslbottom[0])), 
+																			devlpos[1], 100-((devl[1]-stateslbottom[1])*100/(statesltop[1]-stateslbottom[1])),
+																			devlpos[2], 100-((devl[2]-stateslbottom[2])*100/(statesltop[2]-stateslbottom[2])));
+		printf("Biggest Deviations from States Top to Bottom 0, 1 and 2 Right:\n");
+		printf("Byte %i with %i%%, Byte %i with %i%%, Byte %i with %i%%\n", devrpos[0], 100-((devr[0]-statesrbottom[0])*100/(statesrtop[0]-statesrbottom[0])),
+																			devrpos[1], 100-((devr[1]-statesrbottom[1])*100/(statesrtop[1]-statesrbottom[1])),
+																			devrpos[2], 100-((devr[2]-statesrbottom[2])*100/(statesrtop[2]-statesrbottom[2])));
+		//print file hash
+		printf(" \nHashes:\n");
+		crc32 = ~crc32tmp;
+		printf("CRC32: %08X\n", crc32);
+		md5_finish(&md5ctx, md5);
+		printf("MD5: ");
+		for(i = 0; i < 16; i++)
+			printf("%02X", md5[i]);
+		printf("\n");
+		sha1_finish(&sha1ctx, sha1);
+		printf("SHA1: ");
+		for(i = 0; i < 20; i++)
+			printf("%02X", sha1[i]);
+		printf("\n");
+	}
+end_prog:
+	if(fr) fclose(fr);
+	fr = NULL;
+	if(fw) fclose(fw);
+	fw = NULL;
+	if(rbuf) free(rbuf);
+	rbuf = NULL;
+	if(wbuf) free(wbuf);
+	wbuf = NULL;
+	puts("Press enter to exit");
+	getc(stdin);
 	return 0;
 }
