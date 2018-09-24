@@ -8,8 +8,9 @@ https://github.com/zzazzdzz/rgbbin
 The resulting bin then goes into the game RAM at 0xDA84, executed with glitch item ws l' m.  
 All it does is wait for you to press start and then starts sending the current cartridge inserted via audio at about 2.2KB/s, no options or interface as of now.  
 With that speed, it takes under 8 minutes to go dump 1MB carts which I think is not too bad at all, I dont think it could go much faster with my current design.  
-To get it into that position, I created a set of inputs in an emulator that go from the beginning of the game up to a point where it can install that sender.  
-Right now that installer is too dirty for me to feel comfortable sharing it.    
+To get it into that position, I created a set of inputs in an emulator that go from the beginning of the game up to a point where it can install that sender.    
+
+The installer is putting up to 636 bytes of code into the set of inputs I created so when you then convert it and play it back on a game boy player, it will automatically put the sender into your save, ready to use on a real gameboy color.    
 
 The receiver is a simple C program that takes a .wav file of the recorded audio of the sender and turns it into a usable ROM.  
 It takes a standard 16bit Stereo 44100Hz PCM file to do so.  
