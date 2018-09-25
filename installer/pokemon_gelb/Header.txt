@@ -8,5 +8,5 @@ BoardName MBC5 ROM+RAM+BATTERY
 GBC_Firmware_World 1293D68BF9643BC4F36954C1E80E38F39864528D
 IsCGBMode 1
 Core Gambatte
-rerecordCount 4474
+rerecordCount 4561
 

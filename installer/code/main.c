@@ -19,15 +19,15 @@ int main()
 	}
 	fseek(f,0,SEEK_END);
 	size_t sendersize = ftell(f);
-	if(sendersize > 0x27C)
+	if(sendersize > 0x462)
 	{
 		printf("Sender too big to be installed!\n");
 		fclose(f);
 		return 0;
 	}
-	//extend code to 0x27C bytes if needed
-	uint8_t senderbuf[0x27C];
-	memset(senderbuf,0,0x27C);
+	//extend code to 0x462 bytes if needed
+	uint8_t senderbuf[0x462];
+	memset(senderbuf,0,0x462);
 	rewind(f);
 	fread(senderbuf,1,sendersize,f);
 	fclose(f);
@@ -40,18 +40,38 @@ int main()
 	}
 	fseek(f,0,SEEK_END);
 	size_t fsize = ftell(f);
-	if(fsize != 777965)
+	if(fsize != 803458)
 	{
 		printf("Unexpected input log size!\n");
 		fclose(f);
 		return 0;
 	}
 	size_t i;
+	//install DE.. section
+	for(i = 0; i < 0xE6; i++)
+	{
+		//seek to exact frame position
+		fseek(f,0x3D+((53842+(i*3))*0xD),SEEK_SET);
+		uint8_t v = senderbuf[0x462-i-1];
+		//print in button presses
+		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
+			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+	}
+	//install DD.. section
+	for(i = 0; i < 0x100; i++)
+	{
+		//seek to exact frame position
+		fseek(f,0x3D+((55282+(i*3))*0xD),SEEK_SET);
+		uint8_t v = senderbuf[0x37C-i-1];
+		//print in button presses
+		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
+			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+	}
 	//install DC.. section
 	for(i = 0; i < 0x100; i++)
 	{
 		//seek to exact frame position
-		fseek(f,0x3D+((53679+(i*3))*0xD),SEEK_SET);
+		fseek(f,0x3D+((56220+(i*3))*0xD),SEEK_SET);
 		uint8_t v = senderbuf[0x27C-i-1];
 		//print in button presses
 		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
@@ -61,7 +81,7 @@ int main()
 	for(i = 0; i < 0x100; i++)
 	{
 		//seek to exact frame position
-		fseek(f,0x3D+((55197+(i*3))*0xD),SEEK_SET);
+		fseek(f,0x3D+((57158+(i*3))*0xD),SEEK_SET);
 		uint8_t v = senderbuf[0x17C-i-1];
 		//print in button presses
 		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
@@ -71,7 +91,7 @@ int main()
 	for(i = 0; i < 0x7C; i++)
 	{
 		//seek to exact frame position
-		fseek(f,0x3D+((56135+(i*3))*0xD),SEEK_SET);
+		fseek(f,0x3D+((58096+(i*3))*0xD),SEEK_SET);
 		uint8_t v = senderbuf[0x7C-i-1];
 		//print in button presses
 		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
