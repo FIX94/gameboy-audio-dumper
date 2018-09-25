@@ -10,7 +10,8 @@ The sender will prompt you on screen to insert the cartridge you want to dump an
 With that send speed of 2.2KB/s, it takes under 8 minutes to go dump 1MB carts which I think is not too bad at all, I dont think it could go much faster with my current design.    
 
 To get it into that position, I created a set of inputs in an emulator that go from the beginning of the game up to a point where it can install that sender.  
-The installer is putting up to 636 bytes of code into the set of inputs I created so when you then convert it and play it back on a game boy player, it will automatically put the sender into your save, ready to use on a real gameboy color.    
+The installer is putting up to 1122 bytes of code into the set of inputs I created so when you then convert it and play it back on a game boy player, it will automatically put the sender into your save, ready to use on a real gameboy color.  
+Of course you could use the installer to really execute anything you want on a gameboy, you can write up whatever code instead of the sender if you want to do something else with those 1122 bytes.    
 
 The receiver is a simple C program that takes a .wav file of the recorded audio of the sender and turns it into a usable ROM.  
 It takes a standard 16bit Stereo 44100Hz PCM file to do so.  
