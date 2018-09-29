@@ -7,98 +7,95 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+
+#define COPYTOTAL 5
+typedef struct _copyinfo {
+	int frame;
+	size_t offset;
+	size_t length;
+} copyinfo;
+static copyinfo info[2][COPYTOTAL] =
+{
+  { { 53454, 0x381, 0xE1 }, { 54943, 0x281, 0x100 }, { 55872, 0x181, 0x100 }, { 56801, 0x81, 0x100 }, { 57730, 0, 0x81 } }, //pokemon yellow
+  { { 53842, 0x37C, 0xE6 }, { 55282, 0x27C, 0x100 }, { 56220, 0x17C, 0x100 }, { 57158, 0x7C, 0x100 }, { 58096, 0, 0x7C } }, //pokemon gelb
+};
+
 int main()
 {
 	printf("GameBoy Audio Dumper WIP by FIX94\n");
-	//read in raw sender code
-	FILE *f = fopen("../sender/WRAM.bin","rb");
-	if(!f)
-	{
-		printf("Unable to open sender code!\n");
-		return 0;
-	}
-	fseek(f,0,SEEK_END);
-	size_t sendersize = ftell(f);
-	if(sendersize > 0x462)
-	{
-		printf("Sender too big to be installed!\n");
-		fclose(f);
-		return 0;
-	}
-	//extend code to 0x462 bytes if needed
-	uint8_t senderbuf[0x462];
-	memset(senderbuf,0,0x462);
-	rewind(f);
-	fread(senderbuf,1,sendersize,f);
-	fclose(f);
 	//open up input log to install sender
-	f = fopen("tmp/Input Log.txt","rb+");
-	if(!f)
+	FILE *log = fopen("tmp/Input Log.txt","rb+");
+	if(!log)
 	{
 		printf("Unable to open input log!\n");
 		return 0;
 	}
-	fseek(f,0,SEEK_END);
-	size_t fsize = ftell(f);
-	if(fsize != 803458)
+	fseek(log,0,SEEK_END);
+	size_t fsize = ftell(log);
+	copyinfo *cinfo;
+	const char *csendername;
+	if(fsize == 791940)
+	{
+		cinfo = info[0];
+		csendername = "../sender/yellow.bin";
+	}
+	else if(fsize == 803458)
+	{
+		cinfo = info[1];
+		csendername = "../sender/gelb.bin";
+	}
+	else
 	{
 		printf("Unexpected input log size!\n");
-		fclose(f);
+		fclose(log);
 		return 0;
 	}
-	size_t i;
-	//install DE.. section
-	for(i = 0; i < 0xE6; i++)
+	//read in raw sender code
+	FILE *sender = fopen(csendername, "rb");
+	if(!sender)
 	{
-		//seek to exact frame position
-		fseek(f,0x3D+((53842+(i*3))*0xD),SEEK_SET);
-		uint8_t v = senderbuf[0x462-i-1];
-		//print in button presses
-		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
-			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+		printf("Unable to open sender code!\n");
+		fclose(log);
+		return 0;
 	}
-	//install DD.. section
-	for(i = 0; i < 0x100; i++)
+	fseek(sender, 0, SEEK_END);
+	size_t sendersize = ftell(sender);
+	if(sendersize > 0x462)
 	{
-		//seek to exact frame position
-		fseek(f,0x3D+((55282+(i*3))*0xD),SEEK_SET);
-		uint8_t v = senderbuf[0x37C-i-1];
-		//print in button presses
-		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
-			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+		printf("Sender too big to be installed!\n");
+		fclose(sender);
+		fclose(log);
+		return 0;
 	}
-	//install DC.. section
-	for(i = 0; i < 0x100; i++)
+	//extend code to 0x462 bytes if needed
+	uint8_t senderbuf[0x462];
+	//fill in some easily checkable values
+	memset(senderbuf+cinfo[4].offset,0x10,cinfo[4].length);
+	memset(senderbuf+cinfo[3].offset,0x20,cinfo[3].length);
+	memset(senderbuf+cinfo[2].offset,0x30,cinfo[2].length);
+	memset(senderbuf+cinfo[1].offset,0x40,cinfo[1].length);
+	memset(senderbuf+cinfo[0].offset,0x50,cinfo[0].length);
+	//read in sender code
+	rewind(sender);
+	fread(senderbuf, 1, sendersize, sender);
+	fclose(sender);
+	//install sender code
+	size_t cpos, clen;
+	for(cpos = 0; cpos < COPYTOTAL; cpos++)
 	{
-		//seek to exact frame position
-		fseek(f,0x3D+((56220+(i*3))*0xD),SEEK_SET);
-		uint8_t v = senderbuf[0x27C-i-1];
-		//print in button presses
-		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
-			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
-	}
-	//install DB.. section
-	for(i = 0; i < 0x100; i++)
-	{
-		//seek to exact frame position
-		fseek(f,0x3D+((57158+(i*3))*0xD),SEEK_SET);
-		uint8_t v = senderbuf[0x17C-i-1];
-		//print in button presses
-		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
-			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
-	}
-	//install DA.. section
-	for(i = 0; i < 0x7C; i++)
-	{
-		//seek to exact frame position
-		fseek(f,0x3D+((58096+(i*3))*0xD),SEEK_SET);
-		uint8_t v = senderbuf[0x7C-i-1];
-		//print in button presses
-		fprintf(f,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
-			(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+		printf("Frame %i Buffer Offset %08x Length %i\n", cinfo[cpos].frame, cinfo[cpos].offset, cinfo[cpos].length);
+		for(clen = 0; clen < cinfo[cpos].length; clen++)
+		{
+			//seek to exact frame position
+			fseek(log, 0x3D+((cinfo[cpos].frame+(clen*3))*0xD), SEEK_SET);
+			uint8_t v = senderbuf[cinfo[cpos].offset+cinfo[cpos].length-clen-1];
+			//print in button presses
+			fprintf(log,"|%s%s%s%s%s%s%s%s.|",(v&0x40)?"U":".",(v&0x80)?"D":".",(v&0x20)?"L":".",(v&0x10)?"R":".",
+				(v&0x8)?"S":".",(v&0x4)?"s":".",(v&0x2)?"B":".",(v&0x1)?"A":".");
+		}
 	}
 	//done
 	printf("Added sender to inputs!\n");
-	fclose(f);
+	fclose(log);
 	return 0;
 }

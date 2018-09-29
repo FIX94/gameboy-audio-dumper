@@ -6,7 +6,7 @@ copy "pokemon_gelb\Subtitles.txt" "tmp\Subtitles.txt"
 copy "pokemon_gelb\SyncSettings.json" "tmp\SyncSettings.json"
 
 "code\inst"
-"zip\zip" -JXjq9 pokemon_gelb_installer.bk2 "tmp\Comments.txt" "tmp\Header.txt" "tmp\Input Log.txt" "tmp\Subtitles.txt" "tmp\SyncSettings.json"
+"zip\zip" -JXjq9 fix94-pokemongelb-installer.bk2 "tmp\Comments.txt" "tmp\Header.txt" "tmp\Input Log.txt" "tmp\Subtitles.txt" "tmp\SyncSettings.json"
 
 del "tmp\Comments.txt"
 del "tmp\Header.txt"

@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	uint8_t md5[16];
 	uint8_t sha1[20];
 	//finally go
-	printf("GameBoy Audio Dumper WIP by FIX94\n");
+	printf("GameBoy Audio Dumper v0.1 by FIX94\n");
 	if(argc < 2 || strlen(argv[1]) < 5 || memcmp(argv[1]+strlen(argv[1])-4,".wav",4) != 0)
 	{
 		printf("Please provide a .wav file to process!\n");

@@ -5,7 +5,7 @@
 
 include "charmap.asm"
 
-SECTION "WRAM",ROM0[$DA84]
+SECTION "WRAM",ROM0[RAMOFFSET]
 
 init:
 	di
@@ -290,7 +290,7 @@ drawStatus:
 
 hdrmsg:
 	db "GB Audio Dumper", $00
-	db "WIP by FIX94", $00
+	db "v0.1 by FIX94", $00
 
 startmsg:
 	db "Insert Cartridge,", $00
