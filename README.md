@@ -41,7 +41,9 @@ The sender right now hits about 2.2KB/s so even the biggest official cartridge s
 
 The installer is a set of inputs I created in an emulator that go from the beginning of the game up to a point where it can install that sender. See the .bat files in the installer folder for how those put the sender into those inputs. Also in the "code" folder you will find the little C program that does the actual writing of those inputs, you can compile that with gcc.  
 The installer is putting up to 1122 bytes of code into the memory region of the current PC Box.  
-Of course you could use the installer to really execute anything you want on a gameboy, you can write up whatever code instead of the sender if you want to do something else with those 1122 bytes.    
+Of course you could use the installer to really execute anything you want on a gameboy, you can write up whatever code instead of the sender if you want to do something else with those 1122 bytes.  
+To get from the .bk2 it creates to a .txt that gameboy interface can then use, you can just play back the .bk2 in BizHawk2 while you have this lua script from TiKevin83 loaded in the lua console:  
+https://pastebin.com/NbTRNePD    
 
 The receiver is a simple C program you can easily compile with gcc.  
 It basically goes through the .wav file sample by sample, tries to find "silence", then a "peak" and then "silence" again, with that information it evaluates which volume level it got and interprets that as part of the byte it ends up writing into the .gbc file it creates.  
