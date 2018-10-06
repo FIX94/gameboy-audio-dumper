@@ -2,6 +2,9 @@
 This is still very much an early proof of concept project, it aims to dump gameboy cartridges using the audio output.  
 It is intended for a gameboy color as you can hotswap cartridges on it, making this actually usable.    
 
+# Important  
+There may be a chance on certain carts that the save file may get damaged when you insert them while the gameboy color is already running, my cart of tetris dx appears to always wipe the first byte of the save when inserted into an already running gameboy color, no matter if the dumper is running on it or if it is any other game or just the bootup screen, so use this at your own risk.    
+
 # Requirements  
 - GameCube with a GameBoy Player, a SD Gecko and a method to run Homebrew
 - Copy of either the English or German Version of Pokemon Yellow  
