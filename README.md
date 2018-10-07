@@ -1,5 +1,5 @@
 # GameBoy Audio Dumper
-This project aims to dump gameboy cartridges, both ROM and Saves, using the audio output.  
+This project allows you to dump gameboy cartridges, both ROMs and Saves, using the audio output.  
 It is intended for a gameboy color as you can hotswap cartridges on it, making this actually usable.    
 
 # Important  
@@ -10,7 +10,7 @@ There may be a chance on certain carts that the save file may get damaged when y
 - Copy of either the English or German Version of Pokemon Yellow  
 - GameBoy Color so you can hotswap cartridges  
 - Male to Male 3.5mm Stereo Cable or similar to record the Headphone Output of your GameBoy Color  
-- PC to record and convert the ROM/Save on
+- PC to record and convert the ROM/Save on    
 
 # Installation  
 1. Make sure you have both Swiss-GC and GameBoy Interface on your SD Gecko:  
@@ -54,3 +54,5 @@ The receiver is a simple C program you can easily compile with gcc.
 It basically goes through the .wav file sample by sample, tries to find "silence", then a "peak" and then "silence" again, with that information it evaluates which volume level it got and interprets that as part of the byte it ends up writing into the .gbc or .sav file it creates.  
 
 This project can theoretically be extended to run from many other generation 1 pokemon games and probably also generation 2, at this point I did not look into anything else though.  
+It may even work on a gameboy advance if you have a way to constantly push down the small switch on the side of the case that normally switches it back into gameboy advance mode when removing the gameboy color cartridge, though at this point I have not tested that.  
+What I did test however is removing the power switch on an original gameboy, and on that one sadly it appears to reset every time you remove the pokemon cartridge.  
