@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	uint8_t md5[16];
 	uint8_t sha1[20];
 	//finally go
-	printf("GameBoy Audio Dumper v0.1 by FIX94\n");
+	printf("GameBoy Audio Dumper v0.2 by FIX94\n");
 	if(argc < 2 || strlen(argv[1]) < 5 || memcmp(argv[1]+strlen(argv[1])-4,".wav",4) != 0)
 	{
 		printf("Please provide a .wav file to process!\n");
@@ -154,13 +154,6 @@ int main(int argc, char *argv[])
 	if(datsize > (frsize-0x2C))
 	{
 		printf("Data size bigger than .wav!\n");
-		goto end_prog;
-	}
-	memcpy(argv[1]+strlen(argv[1])-4,".gbc",4);
-	fw = fopen(argv[1],"wb");
-	if(!fw)
-	{
-		printf("ERROR: unable to write %s!\n", argv[1]);
 		goto end_prog;
 	}
 	fwsize = 0;
@@ -292,8 +285,31 @@ int main(int argc, char *argv[])
 					wpos++;
 				}
 				bstate^=1;
+				//first peak after
+				if(statesdone == 4)
+				{
+					statesdone++;
+					if(byte == 0x50)
+						memcpy(argv[1]+strlen(argv[1])-4,".sav",4);
+					else if(byte == 0xA0)
+						memcpy(argv[1]+strlen(argv[1])-4,".gbc",4);
+					else
+					{
+						printf("ERROR: not ROM or save file!\n");
+						goto end_prog;
+					}
+					fw = fopen(argv[1],"wb");
+					if(!fw)
+					{
+						printf("ERROR: unable to write %s!\n", argv[1]);
+						goto end_prog;
+					}
+					//reset
+					byte = 0;
+					bstate = 0;
+				}
 			}
-			if(statesdone > 1 && smpltotal-prevsmpltotal > 24)
+			if(statesdone > 1 && smpltotal-prevsmpltotal > 26)
 				printf("WARNING: Possible desync at byte %i sample %i with a value of %i\n", wpos, smpltotal>>1, smpltotal-prevsmpltotal);
 			prevsmpltotal = smpltotal;
 			//add 9 samples before next check
