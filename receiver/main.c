@@ -65,9 +65,9 @@ static void emptywbuf(FILE *f, uint8_t *buf, size_t size)
 {
 	if(size)
 	{
-        crc32tmp = crc32buffer(buf, size, crc32tmp);
-        md5_update(&md5ctx, buf, size);
-        sha1_update(&sha1ctx, buf, size);
+		crc32tmp = crc32buffer(buf, size, crc32tmp);
+		md5_update(&md5ctx, buf, size);
+		sha1_update(&sha1ctx, buf, size);
 		fwrite(buf, 1, size, f);
 	}
 }
@@ -224,6 +224,15 @@ int main(int argc, char *argv[])
 				statesdone++;
 				if(statesdone == 4)
 				{
+					printf("States Top Left: %i %i %i %i\n", statesltop[0], statesltop[1], statesltop[2], statesltop[3]);
+					printf("States Top Right: %i %i %i %i\n", statesrtop[0], statesrtop[1], statesrtop[2], statesrtop[3]);
+					if(statesltop[0] <= statesltop[1] || statesrtop[0] <= statesrtop[1] ||
+						statesltop[1] <= statesltop[2] || statesrtop[1] <= statesrtop[2] ||
+						statesltop[2] <= statesltop[3] || statesrtop[2] <= statesrtop[3])
+					{
+						printf("ERROR: States not read in as expected! Possible volume problem?\n");
+						goto end_prog;
+					}
 					stateslbottom[0] = statesltop[0]-((statesltop[0]-statesltop[1])/2);
 					stateslbottom[1] = statesltop[1]-((statesltop[1]-statesltop[2])/2);
 					stateslbottom[2] = statesltop[2]-((statesltop[2]-statesltop[3])/2);
@@ -231,8 +240,7 @@ int main(int argc, char *argv[])
 					statesrbottom[0] = statesrtop[0]-((statesrtop[0]-statesrtop[1])/2);
 					statesrbottom[1] = statesrtop[1]-((statesrtop[1]-statesrtop[2])/2);
 					statesrbottom[2] = statesrtop[2]-((statesrtop[2]-statesrtop[3])/2);
-					printf("States Top Left: %i %i %i %i\n", statesltop[0], statesltop[1], statesltop[2], statesltop[3]);
-					printf("States Top Right: %i %i %i %i\n", statesrtop[0], statesrtop[1], statesrtop[2], statesrtop[3]);
+
 					printf("States Bottom Left: %i %i %i\n", stateslbottom[0], stateslbottom[1], stateslbottom[2]);
 					printf("States Bottom Right: %i %i %i\n", statesrbottom[0], statesrbottom[1], statesrbottom[2]);
 				}
