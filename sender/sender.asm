@@ -189,6 +189,7 @@ sendROMloop:
 	jr nz, setbanklow
 	; check if total high exists
 	ld a, [banktotal+1]
+	or a
 	jr z, sendROMend
 	; check total bank high
 	inc e
