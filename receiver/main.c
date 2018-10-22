@@ -20,25 +20,28 @@
 //set this to 1 if dump was made in gameboy interface
 #define GBPLAYER_GBI 0
 
-static void curpeak(int32_t *pl, int32_t *pr, int16_t *smpl)//, int32_t i)
+static void curpeak(int32_t *pl, int32_t *pr, int16_t *smpl, size_t *smplpos)//, int32_t i)
 {
 	*pl = 0, *pr = 0;
+	int16_t *smplpos0 = smpl+(smplpos[0]<<1);
+	int16_t *smplpos1 = smpl+(smplpos[1]<<1);
+	int16_t *smplpos2 = smpl+(smplpos[2]<<1);
 	//"silence"
-	int32_t sl1 = (smpl[0]+smpl[2]+smpl[4]) / 3;
-	int32_t sr1 = (smpl[1]+smpl[3]+smpl[5]) / 3;
+	int32_t sl1 = (smplpos0[0]+smplpos0[2]+smplpos0[4]) / 3;
+	int32_t sr1 = (smplpos0[1]+smplpos0[3]+smplpos0[5]) / 3;
 	//volume spike
 #if GBPLAYER_GBI
 	//seems to only have 1 distinct spike
-	int32_t peakl = smpl[10];
-	int32_t peakr = smpl[11];
+	int32_t peakl = smplpos1[0];
+	int32_t peakr = smplpos1[1];
 #else
 	//average out top 2 spikes
-	int32_t peakl = (smpl[10]+smpl[12]) / 2;
-	int32_t peakr = (smpl[11]+smpl[13]) / 2;
+	int32_t peakl = (smplpos1[0]+smplpos1[2]) / 2;
+	int32_t peakr = (smplpos1[1]+smplpos1[3]) / 2;
 #endif
 	//"silence"
-	int32_t sl2 = (smpl[18]+smpl[20]+smpl[22]) / 3;
-	int32_t sr2 = (smpl[19]+smpl[21]+smpl[23]) / 3;
+	int32_t sl2 = (smplpos2[0]+smplpos2[2]+smplpos2[4]) / 3;
+	int32_t sr2 = (smplpos2[1]+smplpos2[3]+smplpos2[5]) / 3;
 	int32_t sdiffl = abs(sl1-sl2);
 	int32_t savgl = (sl1+sl2) / 2;
 	int32_t sdiffr = abs(sr1-sr2);
@@ -80,6 +83,8 @@ static void updatedev(int32_t peak, int32_t *dev, size_t pos, size_t *devpos)
 		*devpos = pos;
 	}
 }
+
+size_t smplpositions[3][3] = { { 0, 5, 9 }, { 0, 5, 10 }, { 0, 11, 21 } };
 
 int main(int argc, char *argv[])
 {
@@ -144,10 +149,40 @@ int main(int argc, char *argv[])
 		printf("Invalid .wav header!\n");
 		goto end_prog;
 	}
-	if(*(uint16_t*)(hdr+20) != 1 || *(uint16_t*)(hdr+22) != 2 || *(uint32_t*)(hdr+24) != 44100 || *(uint32_t*)(hdr+28) != 176400
+	if(*(uint16_t*)(hdr+20) != 1 || *(uint16_t*)(hdr+22) != 2
 		|| *(uint16_t*)(hdr+32) != 4 || *(uint16_t*)(hdr+34) != 16)
 	{
-		printf(".wav has to be 16bit Stereo 44100Hz PCM!\n");
+		printf(".wav has to be 16bit Stereo PCM!\n");
+		goto end_prog;
+	}
+	size_t *csmplpos; size_t smplseek, smpladd, smpllimit, smplend;
+	if(*(uint32_t*)(hdr+24) == 44100 && *(uint32_t*)(hdr+28) == 176400)
+	{
+		csmplpos = smplpositions[0];
+		smplseek = 6;
+		smpladd = 18;
+		smpllimit = 26;
+		smplend = 30;
+	}
+	else if(*(uint32_t*)(hdr+24) == 48000 && *(uint32_t*)(hdr+28) == 192000)
+	{
+		csmplpos = smplpositions[1];
+		smplseek = 8;
+		smpladd = 20;
+		smpllimit = 28;
+		smplend = 32;
+	}
+	else if(*(uint32_t*)(hdr+24) == 96000 && *(uint32_t*)(hdr+28) == 384000)
+	{
+		csmplpos = smplpositions[2];
+		smplseek = 16;
+		smpladd = 40;
+		smpllimit = 56;
+		smplend = 64;
+	}
+	else
+	{
+		printf(".wav has to be 44100/48000/96000Hz!\n");
 		goto end_prog;
 	}
 	datsize = *(uint32_t*)(hdr+40);
@@ -173,15 +208,15 @@ int main(int argc, char *argv[])
 	md5_starts(&md5ctx);
 	sha1_starts(&sha1ctx);
 	//go through read in samples
-	while(smpltotal+30 < smplsize)
+	while(smpltotal+smplend < smplsize)
 	{
 		//refill read buffer if needed
-		if(rremain < 60)
+		if(rremain < (smplend<<1))
 		{
 			fseek(fr,(smpltotal<<1)+0x2C,SEEK_SET);
 			rremain = fread(rbuf,1,16*1024*1024,fr);
 			//not enough remaining of the file for another peak
-			if(rremain < 60)
+			if(rremain < (smplend<<1))
 			{
 				printf("Ending sample reading early at sample %i\n", i>>1);
 				break;
@@ -190,15 +225,15 @@ int main(int argc, char *argv[])
 			smplpos = 0;
 		}
 		//try see if theres a peak in between
-		curpeak(&peakl, &peakr, smpl+smplpos);//, i>>1);
+		curpeak(&peakl, &peakr, smpl+smplpos, csmplpos);//, i>>1);
 		//if there was one, check samples around it
 		//to find the middle of it for accurate capture
 		//size_t addl = 0, addr = 0;
 		if(peakl && peakr)
 		{
-			for(i = 2; i < 6; i+=2)
+			for(i = 2; i < smplseek; i+=2)
 			{
-				curpeak(&peakltmp, &peakrtmp, smpl+smplpos+i);//, (i+j)>>1);
+				curpeak(&peakltmp, &peakrtmp, smpl+smplpos+i, csmplpos);//, (i+j)>>1);
 				//if(i>>1 == 36154) printf("%i %i\n", peakltmp, peakrtmp);
 				if(peakltmp > peakl)
 				{
@@ -317,13 +352,13 @@ int main(int argc, char *argv[])
 					bstate = 0;
 				}
 			}
-			if(statesdone > 1 && smpltotal-prevsmpltotal > 26)
+			if(statesdone > 1 && smpltotal-prevsmpltotal > smpllimit)
 				printf("WARNING: Possible desync at byte %i sample %i with a value of %i\n", wpos, smpltotal>>1, smpltotal-prevsmpltotal);
 			prevsmpltotal = smpltotal;
 			//add 9 samples before next check
-			smpltotal+=18;
-			smplpos+=18;
-			rremain-=36;
+			smpltotal+=smpladd;
+			smplpos+=smpladd;
+			rremain-=(smpladd<<1);
 		}
 		else //no peak, add sample
 		{
