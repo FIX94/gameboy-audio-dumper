@@ -14,10 +14,12 @@ typedef struct _copyinfo {
 	size_t offset;
 	size_t length;
 } copyinfo;
-static copyinfo info[2][COPYTOTAL] =
-{
+static copyinfo info[3][COPYTOTAL] =
+{//installer
   { { 53454, 0x381, 0xE1 }, { 54943, 0x281, 0x100 }, { 55872, 0x181, 0x100 }, { 56801, 0x81, 0x100 }, { 57730, 0, 0x81 } }, //pokemon yellow
   { { 53842, 0x37C, 0xE6 }, { 55282, 0x27C, 0x100 }, { 56220, 0x17C, 0x100 }, { 57158, 0x7C, 0x100 }, { 58096, 0, 0x7C } }, //pokemon gelb
+//updater
+  { {  7176, 0x37C, 0xE6 }, {  8625, 0x27C, 0x100 }, {  9563, 0x17C, 0x100 }, { 10501, 0x7C, 0x100 }, { 11439, 0, 0x7C } }, //pokemon gelb
 };
 
 int main()
@@ -42,6 +44,11 @@ int main()
 	else if(fsize == 803458)
 	{
 		cinfo = info[1];
+		csendername = "../sender/gelb.bin";
+	}
+	else if(fsize == 167004)
+	{
+		cinfo = info[2];
 		csendername = "../sender/gelb.bin";
 	}
 	else
