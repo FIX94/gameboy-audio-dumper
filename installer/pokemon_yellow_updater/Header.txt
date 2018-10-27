@@ -1,0 +1,12 @@
+MovieVersion BizHawk v2.0 Tasproj v1.0
+Author FIX94
+emuVersion GIT HEAD#ba4b32f61
+Platform GB
+GameName Pokemon - Yellow Version (USA, Europe)
+SHA1 CC7D03262EBFAF2F06772C1A480C7D9D5F4A38E1
+BoardName MBC5 ROM+RAM+BATTERY
+GBC_Firmware_World 1293D68BF9643BC4F36954C1E80E38F39864528D
+IsCGBMode 1
+Core Gambatte
+rerecordCount 332
+
