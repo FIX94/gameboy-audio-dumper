@@ -8,4 +8,9 @@ rgbasm -o yellow.o -DRAMOFFSET=$DA7F sender.asm
 python -m rgbbin yellow.o
 ren WRAM.bin yellow.bin
 
+del standalone.bin standalone.o
+rgbasm -o standalone.o -DRAMOFFSET=$C000 sender.asm
+python -m rgbbin standalone.o
+ren WRAM.bin standalone.bin
+
 pause
