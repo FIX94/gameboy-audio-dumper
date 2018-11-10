@@ -40,6 +40,9 @@ clearsamples:
 	; turn off lcd
 	xor a
 	ldh [$FF40], a
+	; disable scroll
+	ldh [$FF42], a
+	ldh [$FF43], a
 	call clearScreen
 	call drawHeader
 	; turn on lcd
