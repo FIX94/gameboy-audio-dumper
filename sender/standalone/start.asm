@@ -43,8 +43,15 @@ isoff:
 	ld de, _8E00_bin
 	ld bc, $200
 	call _memcpy
+	; clear font "space" tile
+	ld hl, $97F0
+	xor a
+bartileloop:
+	ld [hl+], a
+	bit 3, h
+	jr z, bartileloop
 	; set font color
-	ld a, $FC
+	ld a, $E4
 	ldh [$FF47], a
 	; turn on lcd
 	ld a, $81

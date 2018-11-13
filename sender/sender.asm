@@ -40,11 +40,23 @@ clearsamples:
 	; turn off lcd
 	xor a
 	ldh [$FF40], a
+	; clear various regs
+	ldh [$FF02], a
+	ldh [$FF07], a
+	ldh [$FF41], a
 	; disable scroll
 	ldh [$FF42], a
 	ldh [$FF43], a
+	; move lyc and wy out
+	ld a, $9B
+	ldh [$FF45], a
+	ldh [$FF4A], a
 	call clearScreen
 	call drawHeader
+	; clear cpu interrupts
+	xor a
+	ldh [$FFFF], a
+	ldh [$FF0F], a
 	; turn on lcd
 	ld a, $81
 	ldh [$FF40], a
