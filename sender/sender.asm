@@ -441,7 +441,7 @@ drawStatus:
 
 hdrmsg:
 	db "GB Audio Dumper", $00
-	db "v0.2 by FIX94", $00
+	db "v0.3 by FIX94", $00
 
 startmsg:
 	db "Insert Cartridge,", $00
