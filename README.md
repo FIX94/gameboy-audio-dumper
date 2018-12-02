@@ -37,13 +37,13 @@ https://www.gc-forever.com/forums/viewtopic.php?t=2782
 6. Put your cart into a GameBoy Color, get into the game and start the dumper by going into the item menu and use the glitch item ws m, it is the very first one in the list and follow the general sender and receiver usage below    
 
 # General Sender and Receiver Usage  
-2. Make sure you have connected your audio cable from the headphone out into your PC and your recording software open, for all my recording I used Audacity set to 44100Hz 16bit Stereo, though both 48000Hz and 96000Hz are also supported by the receiver  
-3. Test record and start the dumping you ROM/Save on the GameBoy Color, now you can make sure your volume levels are set so the audio does not clip, which basically means it should not hit the absolute maximum volume, we will normalize the volume later anyways  
-4. If the volume levels look good, just restart the GameBoy Color, get into the dumper, put in the cartridge you want to dump and then start recording a bit of silence so the volume level settles, then start dumping on the GameBoy Color  
-5. Wait for it to finish dumping, after that you can stop the recording  
-6. Cut off the bit of silence before and after the dumped data and then normalize the audio, in Audacity that is under Effect -> Normalize, I personally have remove dc offset unchecked and normalize maximum amplitude set to 0.0dB and normalize stereo channels independently checked  
-7. Export the now cut and normalized recording as a standard .wav file into a new folder together with receiver-gbc.exe from the receiver folder found in the current release zip you downloaded earlier  
-8. Drag and drop your .wav file into receiver-gbc.exe and wait for it to convert the .wav into a .gbc or .sav file!    
+1. Make sure you have connected your audio cable from the headphone out into your PC and your recording software open, for all my recording I used Audacity set to 44100Hz 16bit Stereo, though both 48000Hz and 96000Hz are also supported by the receiver  
+2. Test record and start the dumping you ROM/Save on the GameBoy Color, now you can make sure your volume levels are set so the audio does not clip, which basically means it should not hit the absolute maximum volume, we will normalize the volume later anyways  
+3. If the volume levels look good, just restart the GameBoy Color, get into the dumper, put in the cartridge you want to dump and then start recording a bit of silence so the volume level settles, then start dumping on the GameBoy Color  
+4. Wait for it to finish dumping, after that you can stop the recording  
+5. Cut off the bit of silence before and after the dumped data and then normalize the audio, in Audacity that is under Effect -> Normalize, I personally have remove dc offset unchecked and normalize maximum amplitude set to 0.0dB and normalize stereo channels independently checked  
+6. Export the now cut and normalized recording as a standard .wav file into a new folder together with receiver-gbc.exe from the receiver folder found in the current release zip you downloaded earlier  
+7. Drag and drop your .wav file into receiver-gbc.exe and wait for it to convert the .wav into a .gbc or .sav file!    
 
 Some older GameBoy Cartridges may reset your GameBoy Color when you insert them, on those you have to tape off pin 30, the RESET pin of the cartridge:  
 http://www.rickard.gunee.com/projects/playmobile/html/3/Image9.gif  
