@@ -32,7 +32,7 @@ https://github.com/emukidid/swiss-gc/releases
 https://www.gc-forever.com/forums/viewtopic.php?t=2782  
 2. Grab the current release from the "release" tab on top of this page and put the GBI folder from the "sender/pokemon-yellow/gbi-files/installer" folder onto your SD Gecko root, or if you already ran the installer on this cart before, put on the "updater" folder instead  
 3. Put either gbi-fix94-pokemongelb-installer.txt.cli or gbi-fix94-pokemonyellow-installer.txt.cli (or updater instead) renamed to gbi.cli depending on the game language you have onto your SD Gecko root as well and make sure GameBoy Interface is also on the root with the name gbi.dol  
-4. When using the "installer", clear whatever save you have on your pokemon cartridge by holding down Up+Select+Start on the title screen, skip this with the "updater"  
+4. When using the "installer", clear whatever save you have on your pokemon cartridge by holding down Up+B+Select on the title screen, skip this with the "updater"  
 5. Run the GameBoy Interface gbi.dol on your SD Gecko root from Swiss-GC, it will now install the dumper onto your cart, just wait for it to save+reset the game, at that point you can turn off your GameCube  
 6. Put your cart into a GameBoy Color, get into the game and start the dumper by going into the item menu and use the glitch item ws m, it is the very first one in the list and follow the general sender and receiver usage below    
 
